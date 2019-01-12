@@ -12,6 +12,7 @@
 #include "main-defines.h"
 #include "funkcje.h"
 #include "elm327.h"
+#include "control_bits.h"
 
 
 void elm327_send_at_cmd(char* cmd) { //bez przedrostka AT, funkcja dodaje przedrostek AT

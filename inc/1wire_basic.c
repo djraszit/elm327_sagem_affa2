@@ -3,7 +3,7 @@
 #include "1wire_basic.h"
 #include "1wire_defines.h"
 #include "funkcje.h"
-
+#include "control_bits.h"
 
 
 uint8_t Error;

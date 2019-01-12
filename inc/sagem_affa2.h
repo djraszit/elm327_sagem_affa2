@@ -8,10 +8,22 @@
 #ifndef INC_SAGEM_AFFA2_H_
 #define INC_SAGEM_AFFA2_H_
 
-#define MRQ				C, 3
-#define LCD_ON_OFF		C, 2
-#define LCD_COMM_LED	C, 1
+//#define DEBUG
 
+#define SAGEM_MRQ			C, 3
+#define LCD_ON_OFF			C, 2
+#define LCD_COMM_LED		C, 1
+
+#define LCD_READ_ADDR		0x47
+#define LCD_WRITE_ADDR		0x46
+
+#define MRQ_AS_INPUT		do {CLR(DDR,SAGEM_MRQ);SET(PORT,SAGEM_MRQ); }while(0)
+#define MRQ_AS_OUTPUT_HIGH	do {SET(DDR,SAGEM_MRQ);SET(PORT,SAGEM_MRQ); }while(0)
+#define MRQ_AS_OUTPUT_LOW	do {SET(DDR,SAGEM_MRQ);CLR(PORT,SAGEM_MRQ); }while(0)
+#define MRQ_GET				GET(SAGEM_MRQ)
+
+#define MRQ_WAIT_1			while(!(MRQ_GET))
+#define MRQ_WAIT_0			while(MRQ_GET)
 
 #define I_NEWS				3 << 0
 #define I_NEWS_BLINK		1 << 0
@@ -38,10 +50,12 @@ void sagem_affa2_clr_icon(uint16_t icon);
 void sagem_affa2_channel(uint8_t ch);
 
 void sagem_affa2_init();
-void read_sagem(uint8_t * buf);
-void write_sagem(uint8_t * buf);
-uint8_t make_address(uint8_t ile, uint8_t ktora, uint8_t typ);
-void write_text_sagem(volatile char * text, uint8_t scroll_type);
+void sagem_read(uint8_t * buf);
+void sagem_write(uint8_t * buf);
+
+void sagem_read_keys(uint8_t *buf);
+
+void sagem_write_text(volatile char * text, uint8_t scroll_type);
 
 
 #endif /* INC_SAGEM_AFFA2_H_ */

@@ -8,8 +8,18 @@
 #include "I2cbase.h"
 #include <util/delay.h>
 #include <string.h>
-#include "sagem_affa2.h"
+#include "funkcje.h"
 #include "control_bits.h"
+#include "sagem_affa2.h"
+
+#define DELAY1			_delay_us(500)
+#define DELAY2			_delay_us(500)
+#define DELAY_RW		_delay_ms(5)
+
+char buff[64];
+
+static uint8_t data_to_send[16];
+static uint8_t data_read[16];
 
 //preambules
 //                            size              icons       icons chan  addr
@@ -24,13 +34,13 @@ uint8_t lcd_preambule3[6] = { 0x05, 0x90, 0x71, 0xff, 0xff, 0xff };
 void sagem_affa2_set_icon(uint16_t icon) {
 	lcd_preambule3[3] &= ~(icon & 0xff);
 	lcd_preambule3[5] &= ~(icon >> 8);
-	write_sagem(lcd_preambule3);
+	sagem_write(lcd_preambule3);
 }
 
 void sagem_affa2_clr_icon(uint16_t icon) {
 	lcd_preambule3[3] |= (icon & 0xff);
 	lcd_preambule3[5] |= (icon >> 8);
-	write_sagem(lcd_preambule3);
+	sagem_write(lcd_preambule3);
 }
 
 void sagem_affa2_channel(uint8_t ch) {
@@ -38,49 +48,95 @@ void sagem_affa2_channel(uint8_t ch) {
 	lcd_preambule2[3] = ch;
 }
 
-#define DELAY	_delay_us(500)
+void sagem_read_keys(uint8_t *buf) {
+	data_to_send[0] = 0x01;
+	data_to_send[1] = 0x11;
+	sagem_write(data_to_send);
+	sagem_read(buf);
+}
+
+void sagem_write_null() {
+	SET(PORT, LCD_COMM_LED);
+	uint8_t i = 0;
+	start:
+	MRQ_AS_OUTPUT_LOW
+	;
+	DELAY1;
+	I2C_Start();
+	I2C_SendAddr(LCD_WRITE_ADDR);
+	if (TW_STATUS == TW_MT_SLA_NACK) {
+#ifdef DEBUG
+		usart_send_string("write NACK\n\r");
+#endif
+		MRQ_AS_INPUT
+		;
+		DELAY_RW;
+		goto start;
+	}
+	TW_MT_SLA_ACK;
+	for (i = 0; i < 16; i++) {
+		I2C_SendByte(0x00);
+	}
+	I2C_Stop();
+
+	DELAY2;
+	MRQ_AS_INPUT
+	;;
+	CLR(PORT, LCD_COMM_LED);
+	DELAY_RW;
+}
 
 void sagem_affa2_init() {
 	SET(DDR, LCD_COMM_LED);
 	CLR(PORT, LCD_COMM_LED);
 	SET(DDR, LCD_ON_OFF);
 	SET(PORT, LCD_ON_OFF);
-	_delay_ms(500);
-	SET(DDR, MRQ);
-	SET(PORT, MRQ);
-	_delay_ms(500);
-	uint8_t data_to_send[2] = { 0x00, 0x00 };
-	uint8_t data_read[6];
-	write_sagem(data_to_send);
-	DELAY;
-	write_sagem(data_to_send);
-	DELAY;
+	MRQ_AS_INPUT
+	;
+	_delay_ms(1000);
+	sagem_write_null();
+	sagem_write_null();
+
 	do {
 		data_to_send[0] = 0x01;
 		data_to_send[1] = 0x10;
-		write_sagem(data_to_send);
-		DELAY;
+		sagem_write(data_to_send); //send 0x01 0x10 and read
+		MRQ_WAIT_0
+			;
+		sagem_read(data_read);
+#ifdef DEBUG
+		usart_print_hex("FIRST read sagem", data_read, 16);
+#endif
+		sagem_write(data_to_send);
 		data_to_send[0] = 0x01;
 		data_to_send[1] = 0x11;
-		write_sagem(data_to_send);
-		DELAY;
-		read_sagem(data_read);
-		DELAY;
-	} while (data_read[1] == 0x00);
+		sagem_write(data_to_send);
+		sagem_write(data_to_send);
+		MRQ_WAIT_0
+			;
+		sagem_read(data_read);
+#ifdef DEBUG
+		usart_print_hex("SECOND read sagem", data_read, 16);
+#endif
+	} while (data_read[1] != 0x01);
 }
 
-void read_sagem(uint8_t * buf) {
+void sagem_read(uint8_t * buf) {
 	SET(PORT, LCD_COMM_LED);
 	uint8_t i;
 	start:
-	CLR(PORT, MRQ);
-	DELAY;
+	MRQ_AS_OUTPUT_LOW
+	;
+	DELAY1;
 	I2C_Start();
-	I2C_SendAddr(0x47);
+	I2C_SendAddr(LCD_READ_ADDR);
 	if (TW_STATUS == TW_MR_SLA_NACK) {
-//		SET(PORT, LCD_COMM_LED);
-		SET(PORT, MRQ);
-		_delay_ms(3);
+#ifdef DEBUG
+		usart_send_string("read NACK\n\r");
+#endif
+		MRQ_AS_INPUT
+		;
+		DELAY_RW;
 		goto start;
 	}
 	buf[0] = I2C_ReceiveData_ACK();
@@ -89,24 +145,29 @@ void read_sagem(uint8_t * buf) {
 		buf[i + 1] = I2C_ReceiveData_ACK();
 	}
 	I2C_Stop();
-	DELAY;
-	SET(PORT, MRQ);
+	DELAY2;
+	MRQ_AS_INPUT
+	;
 	CLR(PORT, LCD_COMM_LED);
-	_delay_ms(3);
+	DELAY_RW;
 }
 
-void write_sagem(uint8_t * buf) {
+void sagem_write(uint8_t * buf) {
 	SET(PORT, LCD_COMM_LED);
 	uint8_t i = 0;
 	start:
-	CLR(PORT, MRQ);
-	DELAY;
+	MRQ_AS_OUTPUT_LOW
+	;
+	DELAY1;
 	I2C_Start();
-	I2C_SendAddr(0x46);
+	I2C_SendAddr(LCD_WRITE_ADDR);
 	if (TW_STATUS == TW_MT_SLA_NACK) {
-//		SET(PORT, LCD_COMM_LED);
-		SET(PORT, MRQ);
-		_delay_ms(3);
+#ifdef DEBUG
+		usart_send_string("write NACK\n\r");
+#endif
+		MRQ_AS_INPUT
+		;
+		DELAY_RW;
 		goto start;
 	}
 	for (i = 0; i < buf[0] + 1; i++) {
@@ -114,17 +175,18 @@ void write_sagem(uint8_t * buf) {
 	}
 	I2C_Stop();
 
-	DELAY;
-	SET(PORT, MRQ);
+	DELAY2;
+	MRQ_AS_INPUT
+	;;
 	CLR(PORT, LCD_COMM_LED);
-	_delay_ms(3);
+	DELAY_RW;
 }
 
-uint8_t make_address(uint8_t ile, uint8_t ktora, uint8_t typ) {
+static uint8_t make_address(uint8_t ile, uint8_t ktora, uint8_t typ) {
 	return ((ile - 1) << 5) | (ktora << 2) | (typ & 0x03);
 }
 
-void write_text_sagem(volatile char * text, uint8_t scroll_type) {
+void sagem_write_text(volatile char * text, uint8_t scroll_type) {
 	uint8_t buf[16];
 	uint8_t i = 0;
 	uint8_t how_many_lines = 0;
@@ -161,7 +223,7 @@ void write_text_sagem(volatile char * text, uint8_t scroll_type) {
 			buf[preamb_size + i] = 0x20;
 			i++;
 		}
-		write_sagem(buf);
+		sagem_write(buf);
 		current_line++;
 	}
 }

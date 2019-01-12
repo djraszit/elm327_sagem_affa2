@@ -27,7 +27,6 @@
 #include "../inc/elm327.h"
 #include "../inc/main-defines.h"
 
-//#define DEBUG
 
 enum {
 	ATCMD_NOT_SENT, ATCMD_REQUEST, ATCMD_SENT, ATCMD_OK
@@ -46,7 +45,7 @@ enum {
 	DISPLAY_DS18B20_TEMP_OUT,
 	DISPLAY_END
 };
-volatile uint8_t what_to_display = DISPLAY_RPM;
+volatile uint8_t what_to_display = DISPLAY_DS18B20_TEMP_IN;
 
 struct {
 	volatile uint8_t works :1;
@@ -79,6 +78,7 @@ enum {
 
 typedef struct {
 	uint8_t init :1;
+	uint8_t ign_pin_change :1;
 	uint8_t write_text_to_sagem :1;
 	uint8_t usart_new_data :1;
 	uint8_t allow_reentry :1;
@@ -134,15 +134,15 @@ ISR(TIMER1_COMPA_vect, ISR_NOBLOCK) {
 		if (flag->write_text_to_sagem) {
 			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 			{
-				write_text_sagem(sagem_text, scroll_type);
+				sagem_write_text(sagem_text, scroll_type);
 				flag->write_text_to_sagem = 0;
 				TCNT1 = 1;
 			}
 		}
 		sagem_buf[0] = 0x01;
 		sagem_buf[1] = 0x11;
-		write_sagem((uint8_t*) sagem_buf);
-		read_sagem((uint8_t*) sagem_buf);
+		sagem_write((uint8_t*) sagem_buf);
+		sagem_read((uint8_t*) sagem_buf);
 #ifdef DEBUG
 		if (sagem_buf[1] == 0x00) {
 
@@ -273,6 +273,12 @@ int main() {
 				set_timer(0);
 				flag->init = INITIALIZED;
 				continue;
+			}else{
+				if (flag->ign_pin_change == true){
+					flag->ign_pin_change = false;
+				}
+				sprintf((char*) text_to_display, "INIT");
+				print_sagem_text(text_to_display, SCROLL_TEXT);
 			}
 
 			if (elm327.reset == ATCMD_REQUEST) {
@@ -488,6 +494,7 @@ int main() {
 
 		} else {
 			if (flag->init == INITIALIZED) {
+				flag->ign_pin_change = true;
 				sprintf((char*) text_to_display, "SHUTDOWN");
 				sagem_affa2_channel(0x40);
 				print_sagem_text(text_to_display, NO_SCROLL);
