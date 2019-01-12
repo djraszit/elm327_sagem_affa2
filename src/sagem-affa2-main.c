@@ -276,9 +276,10 @@ int main() {
 			}else{
 				if (flag->ign_pin_change == true){
 					flag->ign_pin_change = false;
+					sprintf((char*) text_to_display, "INIT");
+					print_sagem_text(text_to_display, SCROLL_TEXT);
 				}
-				sprintf((char*) text_to_display, "INIT");
-				print_sagem_text(text_to_display, SCROLL_TEXT);
+
 			}
 
 			if (elm327.reset == ATCMD_REQUEST) {
