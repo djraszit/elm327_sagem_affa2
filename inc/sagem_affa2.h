@@ -8,7 +8,7 @@
 #ifndef INC_SAGEM_AFFA2_H_
 #define INC_SAGEM_AFFA2_H_
 
-//#define DEBUG
+#define DEBUG
 
 #define SAGEM_MRQ			C, 3
 #define LCD_ON_OFF			C, 2
@@ -25,21 +25,26 @@
 #define MRQ_WAIT_1			while(!(MRQ_GET))
 #define MRQ_WAIT_0			while(MRQ_GET)
 
-#define I_NEWS				3 << 0
-#define I_NEWS_BLINK		1 << 0
-#define I_TRAFFIC			3 << 2
-#define I_TRAFFIC_BLINK		1 << 2
-#define AF					3 << 4
-#define AF_BLINK			1 << 4
-#define TUNER_LIST			3 << 6
-#define TUNER_LIST_BLINK	1 << 6
+#define I_NEWS				(3 << 0)
+#define I_NEWS_BLINK		(1 << 0)
+#define I_TRAFFIC			(3 << 2)
+#define I_TRAFFIC_BLINK		(1 << 2)
+#define AF					(3 << 4)
+#define AF_BLINK			(1 << 4)
+#define TUNER_LIST			(3 << 6)
+#define TUNER_LIST_BLINK	(1 << 6)
 
-#define TUNER_PRESET_ON		1 << 9
-#define MSS_ON				1 << 10
-#define DOLBY_ON			1 << 11
-#define TUNER_MANU_ON		1 << 13
+#define TUNER_PRESET_ON		(1 << 9)
+#define MSS_ON				(1 << 10)
+#define DOLBY_ON			(1 << 11)
+#define TUNER_MANU_ON		(1 << 13)
 
 #define ALL_ICON			0xffff
+
+
+#define CHAN_BLINK			(1 << 7)
+#define CHAN_CLR_DOT		(1 << 6)
+
 
 #define NO_SCROLL			0x01
 #define SWITCH_TEXT			0x02

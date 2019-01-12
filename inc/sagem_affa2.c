@@ -14,22 +14,40 @@
 
 #define DELAY1			_delay_us(500)
 #define DELAY2			_delay_us(500)
-#define DELAY_RW		_delay_ms(5)
+#define DELAY_RW		_delay_ms(3)
 
 char buff[64];
 
 static uint8_t data_to_send[16];
 static uint8_t data_read[16];
 
-//preambules
-//                            size              icons       icons chan  addr
-uint8_t lcd_preambule1[8] = { 0x0f, 0x90, 0x7f, 0xff, 0x00, 0xff, 0x60, 0x01 };
 
-//                            size              chan  addr
-uint8_t lcd_preambule2[5] = { 0x0c, 0x90, 0x76, 0x40, 0x01 };
+//@46,0C,90,7E,76,01,56,4F,58,20,46,4D,20,20,00,00,00,00
+//@46,0F,90,7F,55,FF,DF,71,01,4C,20,20,32,30,37,20,20,00
+
+
+//@46,0C,90,76,71,01,52,61,64,69,6F,5A,45,54,00,00,00,00
+//@46,0F,90,77,65,FF,DF,20,01,20,20,20,20,39,37,39,20,00
+
+
+
+//preambules
+//
+//                            size              icons       icons chan  		addr
+uint8_t lcd_preambule1[8] = { 0x0f, 0x90, 0x7f, 0xff, 0x00, 0xff, CHAN_CLR_DOT, 0x01 };
+
+//                            size              chan          addr
+uint8_t lcd_preambule2[5] = { 0x0c, 0x90, 0x76, CHAN_CLR_DOT, 0x01 };
 
 //                            size        mask  icons       icons
 uint8_t lcd_preambule3[6] = { 0x05, 0x90, 0x71, 0xff, 0xff, 0xff };
+
+
+
+void sagem_test(uint8_t arg){
+	lcd_preambule3[2] = arg;
+	sagem_write(lcd_preambule3);
+}
 
 void sagem_affa2_set_icon(uint16_t icon) {
 	lcd_preambule3[3] &= ~(icon & 0xff);
@@ -55,36 +73,6 @@ void sagem_read_keys(uint8_t *buf) {
 	sagem_read(buf);
 }
 
-void sagem_write_null() {
-	SET(PORT, LCD_COMM_LED);
-	uint8_t i = 0;
-	start:
-	MRQ_AS_OUTPUT_LOW
-	;
-	DELAY1;
-	I2C_Start();
-	I2C_SendAddr(LCD_WRITE_ADDR);
-	if (TW_STATUS == TW_MT_SLA_NACK) {
-#ifdef DEBUG
-		usart_send_string("write NACK\n\r");
-#endif
-		MRQ_AS_INPUT
-		;
-		DELAY_RW;
-		goto start;
-	}
-	TW_MT_SLA_ACK;
-	for (i = 0; i < 16; i++) {
-		I2C_SendByte(0x00);
-	}
-	I2C_Stop();
-
-	DELAY2;
-	MRQ_AS_INPUT
-	;;
-	CLR(PORT, LCD_COMM_LED);
-	DELAY_RW;
-}
 
 void sagem_affa2_init() {
 	SET(DDR, LCD_COMM_LED);
@@ -93,9 +81,12 @@ void sagem_affa2_init() {
 	SET(PORT, LCD_ON_OFF);
 	MRQ_AS_INPUT
 	;
-	_delay_ms(1000);
-	sagem_write_null();
-	sagem_write_null();
+	_delay_ms(500);
+
+	data_to_send[0] = 0x00;
+	data_to_send[1] = 0x00;
+	sagem_write(data_to_send);
+	sagem_write(data_to_send);
 
 	do {
 		data_to_send[0] = 0x01;
@@ -191,7 +182,7 @@ void sagem_write_text(volatile char * text, uint8_t scroll_type) {
 	uint8_t i = 0;
 	uint8_t how_many_lines = 0;
 	uint8_t current_line = 0;
-	uint8_t s = strlen(text);
+	uint8_t s = strlen((char*)text);
 	if (scroll_type == NO_SCROLL) {
 		how_many_lines = 1;
 	}
@@ -206,6 +197,7 @@ void sagem_write_text(volatile char * text, uint8_t scroll_type) {
 	}
 
 	memcpy(&buf, &lcd_preambule2, lcd_preambule2[0] - 7);
+
 	while (current_line < how_many_lines) {
 
 		uint8_t preamb_size = buf[0] - 7;

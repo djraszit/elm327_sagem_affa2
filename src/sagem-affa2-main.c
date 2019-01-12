@@ -279,7 +279,6 @@ int main() {
 					sprintf((char*) text_to_display, "INIT");
 					print_sagem_text(text_to_display, SCROLL_TEXT);
 				}
-
 			}
 
 			if (elm327.reset == ATCMD_REQUEST) {
