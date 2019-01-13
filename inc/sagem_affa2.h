@@ -8,7 +8,7 @@
 #ifndef INC_SAGEM_AFFA2_H_
 #define INC_SAGEM_AFFA2_H_
 
-#define DEBUG
+//#define DEBUG
 
 #define SAGEM_MRQ			C, 3
 #define LCD_ON_OFF			C, 2

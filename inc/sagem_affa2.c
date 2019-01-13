@@ -44,11 +44,6 @@ uint8_t lcd_preambule3[6] = { 0x05, 0x90, 0x71, 0xff, 0xff, 0xff };
 
 
 
-void sagem_test(uint8_t arg){
-	lcd_preambule3[2] = arg;
-	sagem_write(lcd_preambule3);
-}
-
 void sagem_affa2_set_icon(uint16_t icon) {
 	lcd_preambule3[3] &= ~(icon & 0xff);
 	lcd_preambule3[5] &= ~(icon >> 8);
