@@ -27,13 +27,7 @@
 #include "../inc/elm327.h"
 #include "../inc/main-defines.h"
 
-enum {
-	ATCMD_NOT_SENT, ATCMD_REQUEST, ATCMD_SENT, ATCMD_OK
-};
 
-enum {
-	DATA_REQUEST_NOT_SENT, DATA_REQUEST, DATA_SENT, DATA_REPLY
-};
 
 enum {
 	DISPLAY_RPM,
