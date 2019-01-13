@@ -20,7 +20,9 @@
 #define ELM327_CLOSE_PROTOCOL		"CP"
 #define ELM327_FAST_INIT			"FI"
 
-
+enum {
+	PROTOCOL_CLOSE, PROTOCOL_OPEN
+};
 
 //modes
 enum ELM327_modes{

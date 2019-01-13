@@ -59,9 +59,7 @@ struct {
 	volatile uint8_t protocol_op_cl :2;
 } elm327;
 
-enum {
-	PROTOCOL_CLOSE, PROTOCOL_OPEN
-};
+
 
 enum {
 	NOT_INITIALIZED, INITIALIZED,
@@ -171,7 +169,7 @@ ISR(USART_RX_vect,ISR_BLOCK) {
 }
 
 ISR(INT0_vect, ISR_BLOCK) {
-	if (!(PIND & (1 << PD2))) {
+	if (!(GET(BUTTON_PIN))) {
 		what_to_display++;
 		if (what_to_display >= DISPLAY_END) {
 			what_to_display = 0;
@@ -499,7 +497,7 @@ int main() {
 				print_sagem_text(text_to_display, NO_SCROLL);
 				elm327.last_error = ERR_NO_ERROR;
 				timer_delay(2);
-				if (flag->init == INITIALIZED) {
+//				if (flag->init == INITIALIZED) {
 					set_timer(0);
 					uint16_t l1 = 0;
 					while (l1 < 400) {
@@ -511,7 +509,7 @@ int main() {
 							goto loop_start;
 						}
 					}
-				}
+	//			}
 
 				elm327.init_ok = false;
 				elm327.works = false;
