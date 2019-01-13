@@ -10,9 +10,9 @@
 
 //#define DEBUG
 
-#define SAGEM_MRQ			C, 3
-#define LCD_ON_OFF			C, 2
-#define LCD_COMM_LED		C, 1
+#define SAGEM_MRQ			C, 3//MRQ pin
+#define LCD_ON_OFF			C, 2//włączanie affa2++
+#define LCD_COMM_LED		C, 1//dioda sygnalizująca komunikację z affa2++
 
 #define LCD_READ_ADDR		0x47
 #define LCD_WRITE_ADDR		0x46
@@ -25,21 +25,21 @@
 #define MRQ_WAIT_1			while(!(MRQ_GET))
 #define MRQ_WAIT_0			while(MRQ_GET)
 
-#define I_NEWS				(3 << 0)
-#define I_NEWS_BLINK		(1 << 0)
-#define I_TRAFFIC			(3 << 2)
-#define I_TRAFFIC_BLINK		(1 << 2)
-#define AF					(3 << 4)
-#define AF_BLINK			(1 << 4)
-#define TUNER_LIST			(3 << 6)
-#define TUNER_LIST_BLINK	(1 << 6)
+#define ICON_I_NEWS				(3 << 0)
+#define ICON_I_NEWS_BLINK		(1 << 0)
+#define ICON_I_TRAFFIC			(3 << 2)
+#define ICON_I_TRAFFIC_BLINK	(1 << 2)
+#define ICON_AF					(3 << 4)
+#define ICON_AF_BLINK			(1 << 4)
+#define ICON_TUNER_LIST			(3 << 6)
+#define ICON_TUNER_LIST_BLINK	(1 << 6)
 
-#define TUNER_PRESET_ON		(1 << 9)
-#define MSS_ON				(1 << 10)
-#define DOLBY_ON			(1 << 11)
-#define TUNER_MANU_ON		(1 << 13)
+#define ICON_TUNER_PRESET_ON	(1 << 9)
+#define ICON_MSS_ON				(1 << 10)
+#define ICON_DOLBY_ON			(1 << 11)
+#define ICON_TUNER_MANU_ON		(1 << 13)
 
-#define ALL_ICON			0xffff
+#define ICON_ALL				0xffff
 
 
 #define CHAN_BLINK			(1 << 7)

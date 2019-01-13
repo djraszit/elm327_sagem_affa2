@@ -27,7 +27,6 @@
 #include "../inc/elm327.h"
 #include "../inc/main-defines.h"
 
-
 enum {
 	ATCMD_NOT_SENT, ATCMD_REQUEST, ATCMD_SENT, ATCMD_OK
 };
@@ -139,10 +138,12 @@ ISR(TIMER1_COMPA_vect, ISR_NOBLOCK) {
 				TCNT1 = 1;
 			}
 		}
-		sagem_buf[0] = 0x01;
-		sagem_buf[1] = 0x11;
-		sagem_write((uint8_t*) sagem_buf);
-		sagem_read((uint8_t*) sagem_buf);
+		if (!(MRQ_GET)) {
+			sagem_buf[0] = 0x01;
+			sagem_buf[1] = 0x11;
+			sagem_write((uint8_t*) sagem_buf);
+			sagem_read((uint8_t*) sagem_buf);
+		}
 #ifdef DEBUG
 		if (sagem_buf[1] == 0x00) {
 
@@ -198,7 +199,6 @@ void timer_delay(uint16_t value) { //value * 10ms
 		}
 	}
 }
-
 
 void low_power_mode() {
 	NONATOMIC_BLOCK(NONATOMIC_FORCEOFF);
@@ -273,8 +273,8 @@ int main() {
 				set_timer(0);
 				flag->init = INITIALIZED;
 				continue;
-			}else{
-				if (flag->ign_pin_change == true){
+			} else {
+				if (flag->ign_pin_change == true) {
 					flag->ign_pin_change = false;
 					sprintf((char*) text_to_display, "INIT");
 					print_sagem_text(text_to_display, SCROLL_TEXT);
@@ -381,10 +381,9 @@ int main() {
 							print_sagem_text("protocol set", SCROLL_TEXT);
 						}
 
-						if (elm327.init_ok == false){
-							if (elm327.echo_off == ATCMD_OK &&
-									elm327.linefeed_off == ATCMD_OK &&
-									elm327.set_protocol == ATCMD_OK){
+						if (elm327.init_ok == false) {
+							if (elm327.echo_off == ATCMD_OK && elm327.linefeed_off == ATCMD_OK
+									&& elm327.set_protocol == ATCMD_OK) {
 								elm327.init_ok = true;
 							}
 						}
