@@ -132,6 +132,28 @@ uint16_t adc_read(uint8_t input) {
 	return ret;
 }
 
+#define ILE_POMIAROW	10
+uint16_t adc_average(uint8_t input){
+	static uint8_t nr_pomiaru = 0;
+	uint32_t ret = 0;
+	uint16_t avg = 0;
+	static uint16_t adc[ILE_POMIAROW];
+	adc[0] =  adc_read(input);
+
+	if (nr_pomiaru < ILE_POMIAROW){
+		nr_pomiaru++;
+	}
+	for (uint8_t p = 0; p < nr_pomiaru; p++){
+		ret += (uint32_t) adc[p];
+	}
+	avg = (uint16_t) (ret / nr_pomiaru);
+
+	for (uint8_t p = ILE_POMIAROW - 1; p > 0; p--){
+		adc[p] = adc[p - 1];
+	}
+	return (uint16_t) avg;
+}
+
 uint8_t adc_read8bit(uint8_t input) {
 	ADMUX = 0;
 	ADMUX = (1 << ADLAR) | (1 << REFS0) | (input << 0);
