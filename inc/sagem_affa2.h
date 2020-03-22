@@ -9,6 +9,8 @@
 #define INC_SAGEM_AFFA2_H_
 
 //#define DEBUG
+//#define DEBUG_RD_WR
+//#define DEBUG_MRQ_REQ
 
 #define SAGEM_MRQ			C, 3//MRQ pin
 #define LCD_ON_OFF			C, 2//włączanie affa2++
@@ -49,6 +51,8 @@
 #define NO_SCROLL			0x01
 #define SWITCH_TEXT			0x02
 #define SCROLL_TEXT			0x03
+
+
 
 void sagem_affa2_set_icon(uint16_t icon);
 void sagem_affa2_clr_icon(uint16_t icon);

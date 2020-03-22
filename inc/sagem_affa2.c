@@ -77,6 +77,7 @@ void sagem_affa2_init() {
 	MRQ_AS_INPUT
 	;
 	_delay_ms(500);
+	MRQ_WAIT_0
 
 	data_to_send[0] = 0x00;
 	data_to_send[1] = 0x00;
@@ -136,6 +137,9 @@ void sagem_read(uint8_t * buf) {
 	;
 	CLR(PORT, LCD_COMM_LED);
 	DELAY_RW;
+#ifdef DEBUG_RD_WR
+		usart_print_hex("READ sagem", buf, buf[0] + 1);
+#endif
 }
 
 void sagem_write(uint8_t * buf) {
@@ -166,6 +170,9 @@ void sagem_write(uint8_t * buf) {
 	;;
 	CLR(PORT, LCD_COMM_LED);
 	DELAY_RW;
+#ifdef DEBUG_RD_WR
+	usart_print_hex("WRITE sagem", buf, buf[0] + 1);
+#endif
 }
 
 static uint8_t make_address(uint8_t ile, uint8_t ktora, uint8_t typ) {
