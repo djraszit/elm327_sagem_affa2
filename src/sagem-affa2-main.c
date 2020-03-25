@@ -27,6 +27,9 @@
 #include "../inc/elm327.h"
 #include "../inc/main-defines.h"
 
+#define IGNITION_LOW	0
+#define IGNITION_HIGH	1
+
 struct timer {
 	uint32_t timer_ms;
 	uint32_t timer_sec;
@@ -91,7 +94,7 @@ enum {
 
 typedef struct {
 	uint8_t init :1;
-	uint8_t ign_pin_change :1;
+	uint8_t ign_pin_state :1;
 	uint8_t write_text_to_sagem :1;
 	uint8_t usart_new_data :1;
 	uint8_t allow_reentry :1;
@@ -134,11 +137,11 @@ uint8_t elm327_set_error(uint8_t error) {
 	return 0;
 }
 
-ISR(PCINT1_vect, ISR_BLOCK) {
-	if (!(MRQ_GET)) {
-		flag->mrq = 1;
-	}
-}
+//ISR(PCINT1_vect, ISR_BLOCK) {
+//	if (!(MRQ_GET)) {
+//		flag->mrq = 1;
+//	}
+//}
 
 //volatile uint8_t * const fn = &GPIOR0;
 
@@ -151,24 +154,24 @@ ISR(TIMER0_COMPA_vect,ISR_NOBLOCK) {
 	TCNT0 = 0;
 }
 
-ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
-	if ((*licznik)++ == MAX_LICZNIK) {
-		*licznik = 0;
-	}
-//	if (flag->allow_reentry == ALLOW_REENTRY) {
-//		flag->allow_reentry = DENY_REENTRY;
-//		if (flag->write_text_to_sagem) {
-//			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-//			{
-//				sagem_write_text(sagem_text, scroll_type);
-//				flag->write_text_to_sagem = 0;
-//				TCNT1 = 1;
-//			}
-//		}
-//
-//		flag->allow_reentry = ALLOW_REENTRY;
+//ISR(TIMER1_COMPA_vect, ISR_BLOCK) {
+//	if ((*licznik)++ == MAX_LICZNIK) {
+//		*licznik = 0;
 //	}
-}
+////	if (flag->allow_reentry == ALLOW_REENTRY) {
+////		flag->allow_reentry = DENY_REENTRY;
+////		if (flag->write_text_to_sagem) {
+////			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+////			{
+////				sagem_write_text(sagem_text, scroll_type);
+////				flag->write_text_to_sagem = 0;
+////				TCNT1 = 1;
+////			}
+////		}
+////
+////		flag->allow_reentry = ALLOW_REENTRY;
+////	}
+//}
 
 ISR(USART_RX_vect,ISR_BLOCK) {
 	SET(PORT, USART_COMM_LED);
@@ -201,27 +204,28 @@ inline void set_timer(uint16_t value) {
 	}
 }
 
-void timer_delay(uint16_t value) { //value * 10ms
-	uint16_t l = 0;
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-	{
-		*licznik = 0;
-	}
-	while (l < value) {
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-		{
-			l = *licznik;
-		}
-	}
-}
+//void timer_delay(uint16_t value) { //value * 10ms
+//	uint16_t l = 0;
+//	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+//	{
+//		*licznik = 0;
+//	}
+//	while (l < value) {
+//		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+//		{
+//			l = *licznik;
+//		}
+//	}
+//}
 
 void low_power_mode() {
 	NONATOMIC_BLOCK(NONATOMIC_FORCEOFF);
+	CLR(PORT, LCD_ON_OFF);
 	flag->write_text_to_sagem = false;
 	flag->init = NOT_INITIALIZED;
 	CLKPR = (1 << CLKPCE);
 	CLKPR = (8 << CLKPS0);
-	CLR(PORT, LCD_ON_OFF);
+
 }
 
 int main() {
@@ -254,65 +258,73 @@ int main() {
 
 	I2C_Init();
 	sagem_affa2_init();
+
 	//set timer
 	TCCR0A = 0;
 	TCCR0B = (1 << CS00) | (1 << CS01);
 	OCR0A = 250;
 	TIMSK0 = (1 << OCIE0A);
+	global_timer.timer_sec = 0;
+	global_timer.timer_ms = 0;
 	init_timer_struct(&current_timer);
 	init_timer_struct(&previous_timer);
 	init_timer_struct(&timer_1);
 	init_timer_struct(&shutdown_timer);
-
+	flag->ign_pin_state = IGNITION_LOW;
 	sei();
 	print_sagem_text("init", NO_SCROLL);
 
 //	uint16_t l; //kopia zmiennej licznik
 //	uint8_t wtd; //kopia zmiennej what to display
 
-
 	low_power_mode();
 	while (1) {
-		if (flag->write_text_to_sagem == 1) {
-			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-			{
-				sagem_write_text(sagem_text, scroll_type);
-				flag->write_text_to_sagem = 0;
+		if (flag->init == INITIALIZED) {
+			if (flag->write_text_to_sagem == 1) {
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					sagem_write_text(sagem_text, scroll_type);
+					flag->write_text_to_sagem = 0;
+				}
 			}
-		}
-		if (!(MRQ_GET)) {
-
-			ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-			{
-				sagem_buf[0] = 0x01;
-				sagem_buf[1] = 0x11;
-				sagem_write((uint8_t*) sagem_buf);
-				sagem_read((uint8_t*) sagem_buf);
-			}
+			if (!(MRQ_GET)) {
+				ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+				{
+					sagem_buf[0] = 0x01;
+					sagem_buf[1] = 0x11;
+					sagem_write((uint8_t*) sagem_buf);
+					sagem_read((uint8_t*) sagem_buf);
+				}
 #ifdef DEBUG_MRQ_REQ
 
-			usart_print_hex("MRQ_GET read", (uint8_t*) sagem_buf, sagem_buf[0] + 1);
+				usart_print_hex("MRQ_GET read", (uint8_t*) sagem_buf, sagem_buf[0] + 1);
 
 #endif
+			}
+
 		}
+		SET(PORT, USART_COMM_LED);
+		CLR(PORT, USART_COMM_LED);
 		if (GET(IGNITION_PIN)) {
+			if (flag->ign_pin_state == IGNITION_LOW) {
+				flag->ign_pin_state = IGNITION_HIGH;
+			}
 			if (flag->init == NOT_INITIALIZED) {
 				CLKPR = (1 << CLKPCE);
 				CLKPR = 0x00;
+				init_timer_struct(&previous_timer);
+				init_timer_struct(&current_timer);
+
 				sagem_affa2_init();
 				sagem_affa2_channel(0x40);
-
 				ATOMIC_BLOCK(ATOMIC_FORCEON)
 				{
+					global_timer.timer_sec = 0;
+					global_timer.timer_ms = 0;
 					flag->init = INITIALIZED;
 				}
 				continue;
 			} else {
-				if (flag->ign_pin_change == true) {
-					flag->ign_pin_change = false;
-					init_timer_struct(&previous_timer);
-
-				}
 				get_timer(&current_timer);
 				if (get_total_ms(current_timer) > (get_total_ms(previous_timer) + 100)) {
 
@@ -324,29 +336,30 @@ int main() {
 					print_sagem_text(text_to_display, NO_SCROLL);
 					get_timer(&previous_timer);
 				}
-//				if (get_total_ms(current_timer) > (get_total_ms(timer_1) + 500)) {
-//					print_sagem_text("deadbeef", NO_SCROLL);
-//					get_timer(&timer_1);
-//				}
+				//				if (get_total_ms(current_timer) > (get_total_ms(timer_1) + 500)) {
+				//					print_sagem_text("deadbeef", NO_SCROLL);
+				//					get_timer(&timer_1);
+				//				}
 
 				//		uint16_t sp = SP;
 				//		sprintf((char*) bufor_roboczy, "SP %u  0x%04X\n\r", sp, sp);
 				//		usart_send_string((char*) bufor_roboczy);
-
 			}
+
 
 		} else {
 			if (flag->init == INITIALIZED) {
 				get_timer(&current_timer);
-				if (flag->ign_pin_change == false) {
-					flag->ign_pin_change = true;
+				if (flag->ign_pin_state == IGNITION_HIGH) {
+					flag->ign_pin_state = IGNITION_LOW;
 					get_timer(&shutdown_timer);
 					sagem_affa2_channel(0x40);
 					print_sagem_text("SHUTDOWN", NO_SCROLL);
 				}
-
-				if (get_total_ms(current_timer) > (get_total_ms(shutdown_timer) + 4000)) {
-					low_power_mode();
+				if (flag->ign_pin_state == IGNITION_LOW) {
+					if (get_total_ms(current_timer) > (get_total_ms(shutdown_timer) + 4000)) {
+						low_power_mode();
+					}
 				}
 			} else {
 
