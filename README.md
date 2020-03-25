@@ -9,3 +9,6 @@ Na chwilę obecną program wyświetla przy pomocy ELM327 obroty silnika, prędko
 napięcie zasilania na OBD2.
 Wyświetla też za pomącą DS18B20 temperaturę wewnątrz pojazdu i na zewnątrz.
 Przy pomocy przycisku zmienia się to co chce się odczytywać.
+
+Film na YT
+https://www.youtube.com/watch?v=m1o6TgjkzK8
